@@ -3,4 +3,17 @@
 
 #define PWM_A 5
 #define MOTOR_A_1 7
-#define MOTOR
+#define MOTOR_A_2 6
+#define MOTOR_B_1 9
+#define MOTOR_B_2 8
+#define PWM_B 10
+
+int LastError = 0;
+float Kp = 0.5;
+float Kd = 2.0;
+
+int RightMotorSpeed = 0;
+int LeftMotorSpeed = 0;
+int Surface = 0;
+
+void setup()
