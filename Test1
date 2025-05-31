@@ -1,45 +1,24 @@
-const int Z_POT_PIN = A1;
-const int X_POT_PIN = A2;
-const int BUTTON_PIN = 2;
+// Define the analog input pin
+#define sensorPin A0
 
 void setup() {
+  // Initialize serial communication for debugging
   Serial.begin(9600);
-  pinMode(X_POT_PIN, INPUT);
-  pinMode(Z_POT_PIN, INPUT);
-  pinMode(BUTTON_PIN, INPUT);
-  while (Serial.available() <= 0) {
-    Serial.println("waiting...");
-    delay(300);
-  }
-}
-
-int clamp(int input) {
-  if (input < 0) {
-    return 0;
-  }
-  if (input > 100) {
-    return 100;
-  }
-  return input;
 }
 
 void loop() {
-  if (!Serial.available()) return;
+  // Read the analog value from the sensor
+  int sensorValue = analogRead(sensorPin);
 
-  int zVal = analogRead(Z_POT_PIN);
-  int mappedZ = clamp(map(zVal, 480, 1024, 0, 100));
+  // Convert the analog value to a distance (example formula, may vary)
+  // This is just an example, you need to find the correct formula for your sensor
+  int distanceCm = 100 * (1023 - sensorValue) / 1023;
 
-  int xVal = analogRead(X_POT_PIN);
-  int mappedX = clamp(map(xVal, 480, 1024, 0, 100));
+  // Print the distance to the serial monitor
+  Serial.print("Distance: ");
+  Serial.print(distanceCm);
+  Serial.println(" cm");
 
-  int buttonState = digitalRead(BUTTON_PIN);
-
-  Serial.print(mappedX);
-  Serial.print(',');
-  Serial.print(mappedZ);
-  Serial.print(',');
-  Serial.print(buttonState);
-  Serial.println();
-
-  delay(50);
+  // Wait for a short time
+  delay(1000);
 }
