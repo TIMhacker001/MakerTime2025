@@ -15,8 +15,16 @@ float Kd = 2.0;
 int RightMotorSpeed = 0;
 int LeftMotorSpeed = 0;
 int Surface = 0;
+int sensorValueLeft = analogRead(A7);
+int sensorValueRight = analogRead(A5);
 
-  int sensorValueLeft = analogRead(A7);
-  int sensorValueRight = analogRead(A5);
+void setup(){
+  delay(1000);
 
-void setup()
+  pinMode(PWM_A, OUTPUT);
+  pinMode(MOTOR_A_1, OUTPUT);
+  pinMode(MOTOR_A_2, OUTPUT);
+  pinMode(PWM_B, OUTPUT);
+  pinMode(MOTOR_B_1, OUTPUT);
+  pinMode(MOTOR_B_2, OUTPUT);
+  digitalRead(13, OUTPUT);
