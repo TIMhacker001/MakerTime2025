@@ -16,4 +16,7 @@ int RightMotorSpeed = 0;
 int LeftMotorSpeed = 0;
 int Surface = 0;
 
+  int sensorValueLeft = analogRead(A7);
+  int sensorValueRight = analogRead(A5);
+
 void setup()
