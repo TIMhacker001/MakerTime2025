@@ -1,0 +1,69 @@
+// Пины подключения
+const int LEFT_SENSOR_PIN = A5;
+const int RIGHT_SENSOR_PIN = A7;
+
+const int LEFT_PWM = 5;
+const int RIGHT_PWM = 6;
+
+const int LEFT_DIR = 2;
+const int RIGHT_DIR = 3;
+
+// ПИД коэффициенты
+float Kp = 1.2;
+float Ki = 0.0;
+float Kd = 0.5;
+
+float error = 0;
+float previous_error = 0;
+float integral = 0;
+
+int baseSpeed = 150;  // Базовая скорость
+
+void setup() {
+  pinMode(LEFT_PWM, OUTPUT);
+  pinMode(RIGHT_PWM, OUTPUT);
+  pinMode(LEFT_DIR, OUTPUT);
+  pinMode(RIGHT_DIR, OUTPUT);
+
+  digitalWrite(LEFT_DIR, HIGH);  // Прямое направление
+  digitalWrite(RIGHT_DIR, HIGH);
+
+  Serial.begin(9600);  // Для отладки
+}
+
+void loop() {
+  // Чтение аналоговых значений с ИК-датчиков
+  int leftSensor = analogRead(LEFT_SENSOR_PIN);
+  int rightSensor = analogRead(RIGHT_SENSOR_PIN);
+
+  // Расчет ошибки: если левый ближе к стене, машинка поворачивает направо
+  error = leftSensor - rightSensor;
+
+  // Интеграл и производная
+  integral += error;
+  float derivative = error - previous_error;
+
+  // ПИД корректировка
+  float correction = Kp * error + Ki * integral + Kd * derivative;
+
+  previous_error = error;
+
+  // Управление моторами
+  int leftSpeed = baseSpeed + correction;
+  int rightSpeed = baseSpeed - correction;
+
+  // Ограничение ШИМ-сигнала от 0 до 255
+  leftSpeed = constrain(leftSpeed, 0, 255);
+  rightSpeed = constrain(rightSpeed, 0, 255);
+
+  analogWrite(LEFT_PWM, leftSpeed);
+  analogWrite(RIGHT_PWM, rightSpeed);
+
+  // Отладка
+  Serial.print("L:"); Serial.print(leftSensor);
+  Serial.print(" R:"); Serial.print(rightSensor);
+  Serial.print(" Err:"); Serial.print(error);
+  Serial.print(" Corr:"); Serial.println(correction);
+
+  delay(10);  // Пауза для стабильности
+}
