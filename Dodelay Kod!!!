@@ -1,0 +1,178 @@
+#define PWM_A 5
+#define MOTOR_A_1 7
+#define MOTOR_A_2 6
+#define MOTOR_B_1 9
+#define MOTOR_B_2 8
+#define PWM_B 10
+
+#define LEFT_SENSOR A5
+#define RIGHT_SENSOR A7
+
+const int RightBaseSpeed = 80;
+const int LeftBaseSpeed = 80;
+const int WALL_THRESHOLD = 450;
+const int MAX_PWM = 108;
+
+int RightMotorSpeed = 0;
+int LeftMotorSpeed = 0;
+
+int baseLeft = 0;
+int baseRight = 0;
+
+int minLeft = 0, maxLeft = 0;
+int minRight = 0, maxRight = 0;
+
+bool isLeftWall = true;
+bool isRightWall = true;
+
+int LastError = 0;
+int Error = 0;
+
+float Kp = 5;
+float Kd = 0.5;
+
+int prevRawLeft = 0;
+int prevRawRight = 0;
+
+void setup() {
+Serial.begin(9600);
+
+pinMode(PWM_A, OUTPUT);
+pinMode(MOTOR_A_1, OUTPUT);
+pinMode(MOTOR_A_2, OUTPUT);
+pinMode(PWM_B, OUTPUT);
+pinMode(MOTOR_B_1, OUTPUT);
+pinMode(MOTOR_B_2, OUTPUT);
+
+tone(4, 500, 400);
+delay(800);
+
+readBasicValues();
+
+tone(4, 500, 400);
+delay(400);
+tone(4, 500, 400);
+delay(1000);
+
+tone(4, 300, 200);
+delay(300);
+
+readMinMax();
+
+tone(4, 300, 200);
+delay(400);
+tone(4, 300, 200);
+delay(400);
+tone(4, 300, 200);
+delay(2000);
+
+baseLeft = map(baseLeft, minLeft, maxLeft, 0, 100);
+baseRight = map(baseRight, minRight, maxRight, 0, 100);
+}
+
+void loop() {
+int rawLeft = analogRead(LEFT_SENSOR);
+int rawRight = analogRead(RIGHT_SENSOR);
+
+isLeftWall = rawLeft > WALL_THRESHOLD;
+isRightWall = rawRight > WALL_THRESHOLD;
+
+int sensorLeft = map(rawLeft, minLeft, maxLeft, 0, 100);
+int sensorRight = map(rawRight, minRight, maxRight, 0, 100);
+
+int leftDelta = sensorLeft - baseLeft;
+int rightDelta = sensorRight - baseRight;
+
+if (isLeftWall && isRightWall) {
+Error = leftDelta - rightDelta;
+} else if (isLeftWall) {
+Error = leftDelta;
+} else if (isRightWall) {
+Error = -rightDelta;
+}
+
+if (abs(Error) < 5) {
+Error = 0;
+}
+
+int SpeedUpdate = Kp * Error + Kd * (Error - LastError);
+LastError = Error;
+
+RightMotorSpeed = constrain(RightBaseSpeed + SpeedUpdate, 0, MAX_PWM);
+LeftMotorSpeed = constrain(LeftBaseSpeed - SpeedUpdate, 0, MAX_PWM);
+
+int slowdown = max(abs(leftDelta), abs(rightDelta));
+slowdown = constrain(slowdown, 0, 50);
+
+RightMotorSpeed = constrain(RightBaseSpeed - slowdown, 0, MAX_PWM);
+LeftMotorSpeed = constrain(LeftBaseSpeed - slowdown, 0, MAX_PWM);
+
+int deltaLeftSensor = prevRawLeft - rawLeft;
+int deltaRightSensor = prevRawRight - rawRight;
+
+const int TURN_THRESHOLD = 200;
+
+if (deltaRightSensor > TURN_THRESHOLD && rawRight < 300) {
+Serial.println("Turning right");
+motorControl(10, 10);
+delay(500);
+motorControl(100, 0);
+delay(400);
+} else if (deltaLeftSensor > TURN_THRESHOLD && rawLeft < 300) {
+Serial.println("Turning left");
+motorControl(10, 10);
+delay(500);
+motorControl(0, 100);
+delay(400);
+} else {
+motorControl(RightMotorSpeed, LeftMotorSpeed);
+}
+
+prevRawLeft = rawLeft;
+prevRawRight = rawRight;
+}
+
+void readBasicValues() {
+const int samples = 10;
+int sumLeft = 0;
+int sumRight = 0;
+
+for (int i = 0; i < samples; i++) {
+sumLeft += analogRead(LEFT_SENSOR);
+sumRight += analogRead(RIGHT_SENSOR);
+delay(50);
+}
+
+baseLeft = sumLeft / samples;
+baseRight = sumRight / samples;
+}
+
+void motorControl(int leftSpeed, int rightSpeed) {
+digitalWrite(MOTOR_B_2, LOW);
+digitalWrite(MOTOR_B_1, HIGH);
+analogWrite(PWM_B, rightSpeed);
+
+digitalWrite(MOTOR_A_2, LOW);
+digitalWrite(MOTOR_A_1, HIGH);
+analogWrite(PWM_A, leftSpeed);
+}
+
+void readMinMax() {
+minLeft = baseLeft;
+maxLeft = baseLeft;
+minRight = baseRight;
+maxRight = baseRight;
+
+for (int i = 0; i < 100; i++) {
+int tempLeft = analogRead(LEFT_SENSOR);
+int tempRight = analogRead(RIGHT_SENSOR);
+
+if (tempLeft < minLeft) minLeft = tempLeft;
+if (tempLeft > maxLeft) maxLeft = tempLeft;
+if (tempRight < minRight) minRight = tempRight;
+if (tempRight > maxRight) maxRight = tempRight;
+
+delay(10);
+
+}
+}
